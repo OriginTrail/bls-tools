@@ -57,8 +57,8 @@ fn main() {
         Commands::GenerateKeys => {
             let key_pair = KeyPair::generate();
             let result = json!({
-                "secret_key": hex::encode(key_pair.secret_key.to_be_bytes()),
-                "public_key": hex::encode(G2Affine::from(key_pair.public_key).to_be_bytes()),
+                "secretKey": hex::encode(key_pair.secret_key.to_be_bytes()),
+                "publicKey": hex::encode(G2Affine::from(key_pair.public_key).to_be_bytes()),
             });
             println!("{}", result);
         }
