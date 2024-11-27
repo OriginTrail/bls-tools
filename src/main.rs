@@ -21,10 +21,14 @@ enum Commands {
     GenerateKeys,
     Sign {
         #[arg(short, long)]
-        private_key: String,
+        secret: String,
 
         #[arg(short, long)]
         message: String,
+    },
+    PublicKeyFromSecret {
+        #[arg(short, long)]
+        secret: String,
     },
     AggregateKeys {
         #[arg(short, long, num_args=1..)]
@@ -58,13 +62,27 @@ fn main() {
             });
             println!("{}", result);
         }
-        Commands::Sign { private_key, message } => {
-            let secret_key_bytes = hex::decode(private_key).expect("Invalid hex in private key");
+        Commands::PublicKeyFromSecret { secret } => {
+            let secret_key_bytes = hex::decode(secret).expect("Invalid hex in secret key");
             let secret_key_array: [u8; 32] = secret_key_bytes
                 .try_into()
                 .expect("Secret key must be 32 bytes");
             let secret_key = Fp::from_be_bytes(&secret_key_array)
-                .expect("Failed to deserialize private key");
+                .expect("Failed to deserialize secret key");
+            
+            let public_key = G2Projective::generator() * secret_key;
+            let public_key_affine = G2Affine::from(public_key);
+            let public_key_bytes = public_key_affine.to_be_bytes();
+
+            println!("{}", hex::encode(public_key_bytes));
+        }
+        Commands::Sign { secret, message } => {
+            let secret_key_bytes = hex::decode(secret).expect("Invalid hex in secret key");
+            let secret_key_array: [u8; 32] = secret_key_bytes
+                .try_into()
+                .expect("Secret key must be 32 bytes");
+            let secret_key = Fp::from_be_bytes(&secret_key_array)
+                .expect("Failed to deserialize secret key");
             let expander = XMDExpander::<Keccak256>::new(DST, SECURITY_BITS);
             let hashed_message = G1Projective::hash_to_curve(&expander, message.as_bytes())
                 .expect("Hashing failed");
